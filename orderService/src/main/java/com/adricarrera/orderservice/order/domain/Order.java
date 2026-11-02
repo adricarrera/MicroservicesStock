@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,7 +27,13 @@ public class Order {
   private OrderStatus status;
   @CreationTimestamp
   private LocalDateTime createdAt;
+  @Builder.Default
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<OrderLine> orderLines;
+  private List<OrderLine> orderLines = new ArrayList<>();
+
+  public void addLine(OrderLine line){
+    orderLines.add(line);
+    line.setOrder(this);
+  }
 
 }
