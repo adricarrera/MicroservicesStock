@@ -4,6 +4,7 @@ import com.adricarrera.orderservice.order.api.CreateOrderRequest;
 import com.adricarrera.orderservice.order.api.OrderResponse;
 import com.adricarrera.orderservice.order.domain.Order;
 import com.adricarrera.orderservice.order.domain.OrderLine;
+import com.adricarrera.orderservice.order.domain.OrderNotFoundException;
 import com.adricarrera.orderservice.order.domain.OrderStatus;
 import com.adricarrera.orderservice.order.infrastructure.OrderRepository;
 
@@ -41,7 +42,7 @@ public class OrderService {
   @Transactional(readOnly = true)
   public OrderResponse getOrder(final UUID id){
     Order order = orderRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Order not found"));
+        .orElseThrow(() -> new OrderNotFoundException("Order with ID " + id + " not found" ));
     return toResponse(order);
   }
 
