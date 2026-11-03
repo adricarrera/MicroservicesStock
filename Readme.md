@@ -1,39 +1,27 @@
-## Project Overview
-This project is aimed at building an order and inventory management system based on microservices.
-It manages the orders, then checks the inventory and updates it accordingly.
+# Microservices Stock Project
 
-*Current implementation:*
+Sistema de pedidos y stock para una cadena de supermercados, hecho para
+aprender arquitectura de microservicios con Spring Boot, Kafka y Docker.
 
-It is built using Spring Boot to develop the REST API.
-PostgreSQL is used as the database to store the data.
-Flyway is used to manage the database migrations.
-JUnit and Testcontainers are used to perform unit and integration tests.
-Docker is used for containerization, and Docker Compose is used to orchestrate the containers.
+## Estado
+- [x] order-service
+- [ ] inventory-service
+- [ ] notification-service
+- [ ] Despliegue en AWS
 
-## Current Features
-Currently, I'm building order-service microservice, which is responsible for managing the orders.
-Orders can be created and retrieved by their ID.
+## Cómo arrancarlo
+1. `docker compose up -d`
+2. Arranca `orderService` (desde el IDE o con `./mvnw spring-boot:run`)
+3. Tests: `./mvnw test` (requiere Docker encendido)
 
-## Requirements
-- Java 17
-- Docker
-- Docker Compose
+## API
+- `POST /v1/orders`: crea un pedido
+- `GET /v1/orders/{id}`: consulta un pedido
 
-## Getting Started
-
-### 1. Start infrastructure
-`docker compose up -d`
-### 2. Run application
-`./mvnw spring-boot:run`
-### 3. Run tests
-`./mvnw test`
-
-## Decisions
-### 1. Monorepo
-All microservices will be maintained in a single repository. This simplifies project management.
-### 2. Flyway over ddl-auto
-Flyway is used to manage database schema changes through versioned migrations. 
-This provides greater control, traceability and consistency across different environments.
-### 3. Testcontainers over Mocks
-Testcontainers is used to run integration tests against a real PostgreSQL instance instead of relying exclusively on mocks.
-This helps verify actual database interactions and detect integration issues.
+## Decisiones
+- **Monorepo**: un repositorio, un proyecto Spring Boot por servicio.
+- **Paquetes por funcionalidad** con capas ligeras, sin DDD completo ni hexagonal:
+  el dominio es pequeño y no compensa el coste.
+- **DTOs separados de las entidades**: la API no expone el modelo de datos.
+- **Flyway y `ddl-auto: validate`**: el esquema está versionado.
+- **Testcontainers** en vez de mocks o H2: se prueba contra PostgreSQL real.

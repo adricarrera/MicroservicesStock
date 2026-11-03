@@ -10,6 +10,10 @@ services:
       - "5432:5432"
     volumes:
       - orders-data:/var/lib/postgresql/data
-
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
 volumes:
   orders-data:
