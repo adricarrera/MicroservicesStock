@@ -1,3 +1,6 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: inventoryService
@@ -13,3 +16,16 @@ spring:
 
   flyway:
     enabled: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: inventory-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        spring.json.value.default.type: com.adricarrera.inventoryservice.stock.events.OrderCreated
+        spring.json.trusted.packages: com.adricarrera.inventoryservice.stock.events
+        spring.json.use.type.headers: false
+
