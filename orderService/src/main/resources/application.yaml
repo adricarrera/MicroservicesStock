@@ -1,16 +1,29 @@
 spring:
   application:
     name: orderService
+
   datasource:
     url: jdbc:postgresql://localhost:5432/orders
     username: orders
     password: orders
+
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
+
   kafka:
     bootstrap-servers: localhost:9092
+
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+
+    consumer:
+      group-id: order-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        spring.json.type.mapping: stockReserved:com.adricarrera.orderservice.order.events.StockReserved,stockRejected:com.adricarrera.orderservice.order.events.StockRejected
+        spring.json.trusted.packages: com.adricarrera.orderservice.order.events

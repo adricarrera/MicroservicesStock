@@ -4,6 +4,7 @@ server:
 spring:
   application:
     name: inventoryService
+
   datasource:
     url: jdbc:postgresql://localhost:5432/inventory
     username: inventory
@@ -19,6 +20,7 @@ spring:
 
   kafka:
     bootstrap-servers: localhost:9092
+
     consumer:
       group-id: inventory-service
       auto-offset-reset: earliest
@@ -29,3 +31,8 @@ spring:
         spring.json.trusted.packages: com.adricarrera.inventoryservice.stock.events
         spring.json.use.type.headers: false
 
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        spring.json.type.mapping: stockReserved:com.adricarrera.inventoryservice.stock.events.StockReserved,stockRejected:com.adricarrera.inventoryservice.stock.events.StockRejected
