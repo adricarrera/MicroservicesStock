@@ -6,6 +6,8 @@ import com.adricarrera.orderservice.order.domain.Order;
 import com.adricarrera.orderservice.order.domain.OrderLine;
 import com.adricarrera.orderservice.order.domain.OrderNotFoundException;
 import com.adricarrera.orderservice.order.domain.OrderStatus;
+import com.adricarrera.orderservice.order.events.OrderCreated;
+import com.adricarrera.orderservice.order.events.OrderEventPublisher;
 import com.adricarrera.orderservice.order.infrastructure.OrderRepository;
 
 import lombok.AllArgsConstructor;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class OrderService {
 
   private final OrderRepository orderRepository;
+  private final OrderEventPublisher orderEventPublisher;
 
   @Transactional
   public OrderResponse createOrder(final CreateOrderRequest request) {
@@ -35,6 +38,14 @@ public class OrderService {
           .build()));
 
     Order orderSaved = orderRepository.save(order);
+
+    orderEventPublisher.publishOrderCreated(new OrderCreated(
+        1,
+        orderSaved.getId(),
+        orderSaved.getOrderLines().stream()
+            .map(line -> new OrderCreated.Line(line.getProductId(), line.getQuantity()))
+            .toList()
+    ));
 
     return toResponse(orderSaved);
   }
