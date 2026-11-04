@@ -15,14 +15,13 @@ import java.util.List;
 public class OrderCreatedListener {
 
   private final StockService stockService;
-  private final StockEventPublisher stockEventPublisher;
 
   @KafkaListener(topics = "orders.created")
-  public void onOrderCreated(OrderCreated event){
+  public void onOrderCreated(final OrderCreated event) {
     log.info("Received OrderCreated event: {}", event);
 
     //Convert event lines to reservation lines
-    List <ReservationLine> reservationLines = event.lines()
+    List<ReservationLine> reservationLines = event.lines()
         .stream()
         .map(line -> new ReservationLine(
             line.productId(),
@@ -31,17 +30,6 @@ public class OrderCreatedListener {
         .toList();
 
     //Reserve stock
-    boolean reserved = stockService.reserve(reservationLines);
-
-    if(reserved){
-      log.info("Stock reserved for order {}", event.orderId());
-      stockEventPublisher.publishStockReserved(
-          new StockReserved(1, event.orderId()));
-    } else {
-      log.warn("Stock reservation failed for order {}", event.orderId());
-      stockEventPublisher.publishStockRejected(
-          new StockRejected(1, event.orderId(), "Insufficient stock"));
-    }
+    this.stockService.reserve(reservationLines, event.orderId());
   }
-
 }
