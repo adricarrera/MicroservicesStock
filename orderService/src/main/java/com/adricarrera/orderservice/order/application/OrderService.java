@@ -11,12 +11,14 @@ import com.adricarrera.orderservice.order.events.OrderEventPublisher;
 import com.adricarrera.orderservice.order.infrastructure.OrderRepository;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class OrderService {
@@ -49,6 +51,28 @@ public class OrderService {
 
     return toResponse(orderSaved);
   }
+
+  @Transactional
+  public void stockReserveConfirmed(UUID orderId){
+    Order order = orderRepository.findById(orderId)
+        .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderId + " not found"));
+
+    order.setStatus(OrderStatus.CONFIRMED);
+    orderRepository.save(order);
+    log.info("Order {} CONFIRMED", orderId);
+  }
+
+  @Transactional
+  public void stockReserveRejected(UUID orderId, String reason){
+    Order order = orderRepository.findById(orderId)
+        .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderId + " not found"));
+
+    order.setStatus(OrderStatus.REJECTED);
+    orderRepository.save(order);
+    log.info("Order {} REJECTED. Reason: {}", orderId, reason);
+  }
+
+
 
   @Transactional(readOnly = true)
   public OrderResponse getOrder(final UUID id){
