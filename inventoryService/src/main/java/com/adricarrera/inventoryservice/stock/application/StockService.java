@@ -11,7 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -23,10 +26,14 @@ public class StockService {
 
   @Transactional
   public void reserve(final List<ReservationLine> lines, final UUID orderId) {
-    //1. Check if all products have enough stock
+    final Map<UUID, Product> products = this.productRepository
+        .findAllByIdForUpdate(lines.stream().map(ReservationLine::productId).toList())
+        .stream()
+        .collect(Collectors.toMap(Product::getId, Function.identity()));
+
     final boolean hasInsufficientStock = lines.stream()
         .anyMatch(line -> {
-          Product product = this.productRepository.findById(line.productId()).orElse(null);
+          Product product = products.get(line.productId());
           return product == null || product.getAvailableQuantity() < line.quantity();
         });
 

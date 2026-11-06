@@ -13,4 +13,8 @@ import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID> {
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select p from Product p where p.id in :ids order by p.id")
+  List<Product> findAllByIdForUpdate(@Param("ids") Collection<UUID> ids);
+
 }

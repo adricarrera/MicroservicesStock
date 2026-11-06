@@ -5,6 +5,10 @@ import com.adricarrera.orderservice.order.api.OrderResponse;
 import com.adricarrera.orderservice.order.application.OrderService;
 import com.adricarrera.orderservice.order.domain.OrderNotFoundException;
 import com.adricarrera.orderservice.order.domain.OrderStatus;
+import com.adricarrera.orderservice.order.events.StockRejected;
+import com.adricarrera.orderservice.order.events.StockReserved;
+import com.adricarrera.orderservice.order.events.StockResultListener;
+import com.adricarrera.orderservice.order.infrastructure.OrderRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +22,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @Testcontainers
@@ -29,6 +34,12 @@ public class OrderServiceIntegrationTest {
 
   @Autowired
   OrderService orderService;
+
+  @Autowired
+  OrderRepository orderRepository;
+
+  @Autowired
+  StockResultListener stockResultListener;
 
   @Test
   void createsAndRetrievesOrder(){
@@ -50,5 +61,35 @@ public class OrderServiceIntegrationTest {
 
     assertThatThrownBy(() -> orderService.getOrder(randomId))
         .isInstanceOf(OrderNotFoundException.class);
+  }
+
+  @Test
+  void shouldReserveStockCorrectly(){
+    var request = new CreateOrderRequest(List.of(
+        new CreateOrderRequest.OrderLineRequest(UUID.randomUUID(), 2)));
+
+    OrderResponse created = orderService.createOrder(request);
+    StockReserved stockReserved = new StockReserved(1, created.id());
+    stockResultListener.onStockReserved(stockReserved);
+
+    assertThat(orderRepository.findById(created.id())
+        .orElseThrow()
+        .getStatus())
+        .isEqualTo(OrderStatus.CONFIRMED);
+  }
+
+  @Test
+  void shouldRejectReservation(){
+    var request = new CreateOrderRequest(List.of(
+        new CreateOrderRequest.OrderLineRequest(UUID.randomUUID(), 2)));
+
+    OrderResponse created = orderService.createOrder(request);
+    StockRejected stockRejected = new StockRejected(1, created.id(), "Not enough stock");
+    stockResultListener.onStockRejected(stockRejected);
+
+    assertThat(orderRepository.findById(created.id())
+        .orElseThrow()
+        .getStatus())
+        .isEqualTo(OrderStatus.REJECTED);
   }
 }
