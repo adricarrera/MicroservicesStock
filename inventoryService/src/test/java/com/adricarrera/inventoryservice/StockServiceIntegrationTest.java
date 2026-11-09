@@ -7,6 +7,7 @@ import com.adricarrera.inventoryservice.stock.events.StockEventPublisher;
 import com.adricarrera.inventoryservice.stock.events.StockRejected;
 import com.adricarrera.inventoryservice.stock.events.StockReserved;
 import com.adricarrera.inventoryservice.stock.infrastructure.ProductRepository;
+import com.adricarrera.inventoryservice.stock.infrastructure.StockReservationRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,6 +35,9 @@ public class StockServiceIntegrationTest {
 
   @Autowired
   StockService stockService;
+
+  @Autowired
+  StockReservationRepository stockReservationRepository;
 
   @Autowired
   ProductRepository productRepository;
@@ -163,5 +167,65 @@ public class StockServiceIntegrationTest {
     verify(stockEventPublisher, atLeastOnce()).publishStockRejected(new StockRejected(1, orderId, "Insufficient stock"));
     assertThat(productRepository.findById(product1.getId()).orElseThrow().getAvailableQuantity()).isEqualTo(10);
     assertThat(productRepository.findById(product2.getId()).orElseThrow().getAvailableQuantity()).isEqualTo(5);
+  }
+
+  @Test
+  void ignoresDuplicateOrder(){
+    Product product = Product.builder()
+        .name("Product")
+        .availableQuantity(10)
+        .build();
+
+    productRepository.save(product);
+
+    UUID orderId = UUID.randomUUID();
+    List<ReservationLine> lines = List.of(new ReservationLine(product.getId(), 3));
+
+    stockService.reserve(lines, orderId);
+    stockService.reserve(lines, orderId);
+
+    assertThat(productRepository.findById(product.getId()).orElseThrow().getAvailableQuantity()).isEqualTo(7);
+    verify(stockEventPublisher, times(1)).publishStockReserved(any());
+    verify(stockEventPublisher, never()).publishStockRejected(any());
+    assertThat(stockReservationRepository.existsByOrderId(orderId)).isTrue();
+  }
+
+  @Test
+  void ignoresDuplicateOrderProcessedConcurrently() throws Exception {
+
+    Product product = Product.builder()
+        .name("Product")
+        .availableQuantity(10)
+        .build();
+
+    productRepository.save(product);
+
+    int copies = 5;
+    UUID orderId = UUID.randomUUID();
+    List<ReservationLine> lines = List.of(new ReservationLine(product.getId(), 3));
+
+    ExecutorService pool = Executors.newFixedThreadPool(copies);
+    CountDownLatch startSignal = new CountDownLatch(1);
+
+    List<Future<?>> futures = new ArrayList<>();
+    for (int i = 0; i < copies; i++) {
+      futures.add(pool.submit(() -> {
+        try {
+          startSignal.await();
+          stockService.reserve(lines, orderId);   // todos con el MISMO pedido
+        } catch (Exception e) {
+          // las copias que pierden la carrera fallan por el UNIQUE: es lo esperado
+        }
+      }));
+    }
+
+    startSignal.countDown();
+    for (Future<?> future : futures) {
+      future.get();
+    }
+    pool.shutdown();
+
+    assertThat(productRepository.findById(product.getId()).orElseThrow().getAvailableQuantity()).isEqualTo(7);
+    verify(stockEventPublisher, times(1)).publishStockReserved(any());
   }
 }
