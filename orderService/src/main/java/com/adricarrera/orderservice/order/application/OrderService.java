@@ -53,25 +53,30 @@ public class OrderService {
   }
 
   @Transactional
-  public void stockReserveConfirmed(UUID orderId){
+  public void confirmOrder(UUID orderId){
     Order order = orderRepository.findById(orderId)
         .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderId + " not found"));
-
-    order.setStatus(OrderStatus.CONFIRMED);
-    orderRepository.save(order);
-    log.info("Order {} CONFIRMED", orderId);
+    if(order.confirm()) {
+      log.info("Order {} CONFIRMED", orderId);
+    }else{
+      logWarnOrderAlreadyInState(orderId, order);
+    }
   }
 
   @Transactional
-  public void stockReserveRejected(UUID orderId, String reason){
+  public void rejectOrder(UUID orderId, String reason){
     Order order = orderRepository.findById(orderId)
         .orElseThrow(() -> new OrderNotFoundException("Order with ID " + orderId + " not found"));
-
-    order.setStatus(OrderStatus.REJECTED);
-    orderRepository.save(order);
-    log.info("Order {} REJECTED. Reason: {}", orderId, reason);
+    if(order.reject()) {
+      log.info("Order {} REJECTED. Reason: {}", orderId, reason);
+    }else{
+      logWarnOrderAlreadyInState(orderId, order);
+    }
   }
 
+  private static void logWarnOrderAlreadyInState(UUID orderId, Order order) {
+    log.warn("Order {} is already in state {}", orderId, order.getStatus());
+  }
 
 
   @Transactional(readOnly = true)

@@ -36,4 +36,20 @@ public class Order {
     line.setOrder(this);
   }
 
+  public boolean confirm(){
+    if(status != OrderStatus.PENDING){
+      return false;
+    }
+    status = OrderStatus.CONFIRMED;
+    return true;
+  }
+
+  public  boolean reject(){
+    if(status != OrderStatus.PENDING){
+      return false;
+    }
+    status = OrderStatus.REJECTED;
+    return true;
+  }
+
 }

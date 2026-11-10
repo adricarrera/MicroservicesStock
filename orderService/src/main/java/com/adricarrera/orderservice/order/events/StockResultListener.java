@@ -18,11 +18,11 @@ public class StockResultListener {
   //Update order status to "CONFIRMED"
   @KafkaListener(topics = "stock.reserved")
   public void onStockReserved(StockReserved event){
-   orderService.stockReserveConfirmed(event.orderId());
+   orderService.confirmOrder(event.orderId());
   }
 
   @KafkaListener(topics = "stock.rejected")
   public void onStockRejected(StockRejected event){
-    orderService.stockReserveRejected(event.orderId(), event.reason());
+    orderService.rejectOrder(event.orderId(), event.reason());
   }
 }

@@ -3,6 +3,7 @@ package com.adricarrera.orderservice;
 import com.adricarrera.orderservice.order.api.CreateOrderRequest;
 import com.adricarrera.orderservice.order.api.OrderResponse;
 import com.adricarrera.orderservice.order.application.OrderService;
+import com.adricarrera.orderservice.order.domain.Order;
 import com.adricarrera.orderservice.order.domain.OrderNotFoundException;
 import com.adricarrera.orderservice.order.domain.OrderStatus;
 import com.adricarrera.orderservice.order.events.StockRejected;
@@ -91,5 +92,72 @@ public class OrderServiceIntegrationTest {
         .orElseThrow()
         .getStatus())
         .isEqualTo(OrderStatus.REJECTED);
+  }
+
+  @Test
+  void shouldNotConfirmOrderAgain(){
+    var request = new CreateOrderRequest(List.of(
+        new CreateOrderRequest.OrderLineRequest(UUID.randomUUID(), 2)));
+
+    OrderResponse created = orderService.createOrder(request);
+    StockReserved stockReserved = new StockReserved(1, created.id());
+
+    stockResultListener.onStockReserved(stockReserved);
+    stockResultListener.onStockReserved(stockReserved);
+
+    assertThat(orderRepository.findById(created.id())
+        .orElseThrow()
+        .getStatus())
+        .isEqualTo(OrderStatus.CONFIRMED);
+  }
+
+  @Test
+  void shouldNotRejectOrderConfirmed(){
+    var request = new CreateOrderRequest(List.of(
+        new CreateOrderRequest.OrderLineRequest(UUID.randomUUID(), 2)));
+
+    OrderResponse created = orderService.createOrder(request);
+    StockReserved stockReserved = new StockReserved(1, created.id());
+    StockRejected stockRejected = new StockRejected(1, created.id(),"Not enough stock");
+
+    stockResultListener.onStockReserved(stockReserved);
+    stockResultListener.onStockRejected(stockRejected);
+
+    assertThat(orderRepository.findById(created.id())
+        .orElseThrow()
+        .getStatus())
+        .isEqualTo(OrderStatus.CONFIRMED);
+  }
+
+  @Test
+  void shouldNotConfirmOrderRejected(){
+    var request = new CreateOrderRequest(List.of(
+        new CreateOrderRequest.OrderLineRequest(UUID.randomUUID(), 2)));
+
+    OrderResponse created = orderService.createOrder(request);
+    StockRejected stockRejected = new StockRejected(1, created.id(),"Not enough stock");
+    StockReserved stockReserved = new StockReserved(1, created.id());
+
+    stockResultListener.onStockRejected(stockRejected);
+    stockResultListener.onStockReserved(stockReserved);
+
+    assertThat(orderRepository.findById(created.id())
+        .orElseThrow()
+        .getStatus())
+        .isEqualTo(OrderStatus.REJECTED);
+  }
+
+  @Test
+  void shouldNotConfirmOrderTwice() {
+    Order order = Order.builder()
+        .status(OrderStatus.PENDING)
+        .build();
+
+    assertThat(order.confirm()).isTrue();
+
+    assertThat(order.confirm()).isFalse();
+
+    assertThat(order.getStatus())
+        .isEqualTo(OrderStatus.CONFIRMED);
   }
 }
