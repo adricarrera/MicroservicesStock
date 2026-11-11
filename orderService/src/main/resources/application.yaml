@@ -3,9 +3,9 @@ spring:
     name: orderService
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/orders
-    username: orders
-    password: orders
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/orders}
+    username: ${DB_USERNAME:orders}
+    password: ${DB_PASSWORD:orders}
 
   jpa:
     hibernate:
@@ -13,7 +13,7 @@ spring:
     show-sql: true
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
