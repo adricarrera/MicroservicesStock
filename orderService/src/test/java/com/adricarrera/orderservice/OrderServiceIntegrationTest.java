@@ -148,6 +148,21 @@ public class OrderServiceIntegrationTest {
   }
 
   @Test
+  void mergesLinesForTheSameProduct() {
+    UUID productId = UUID.randomUUID();
+    var request = new CreateOrderRequest(List.of(
+        new CreateOrderRequest.OrderLineRequest(productId, 2),
+        new CreateOrderRequest.OrderLineRequest(productId, 2)
+    ));
+
+    OrderResponse created = orderService.createOrder(request);
+    OrderResponse saved = orderService.getOrder(created.id());
+
+    assertThat(saved.lines())
+        .containsExactly(new OrderResponse.OrderLineResponse(productId, 4));
+  }
+
+  @Test
   void shouldNotConfirmOrderTwice() {
     Order order = Order.builder()
         .status(OrderStatus.PENDING)

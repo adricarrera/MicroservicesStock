@@ -16,7 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -33,11 +36,20 @@ public class OrderService {
         .createdAt(LocalDateTime.now())
         .build();
 
-    request.lines().forEach(lineRequest ->
-      order.addLine(OrderLine.builder()
-          .productId(lineRequest.productId())
-          .quantity(lineRequest.quantity())
-          .build()));
+    Map<UUID, Integer> groupedLines = request.lines().stream()
+        .collect(Collectors.groupingBy(
+            CreateOrderRequest.OrderLineRequest::productId,
+            Collectors.summingInt(
+                CreateOrderRequest.OrderLineRequest::quantity
+            )
+        ));
+
+    groupedLines.forEach((productId, quantity) ->
+        order.addLine(OrderLine.builder()
+            .productId(productId)
+            .quantity(quantity)
+            .build())
+    );
 
     Order orderSaved = orderRepository.save(order);
 
