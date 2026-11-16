@@ -6,6 +6,7 @@ import com.adricarrera.orderservice.order.application.OrderService;
 import com.adricarrera.orderservice.order.domain.Order;
 import com.adricarrera.orderservice.order.domain.OrderNotFoundException;
 import com.adricarrera.orderservice.order.domain.OrderStatus;
+import com.adricarrera.orderservice.order.events.OrderEventPublisher;
 import com.adricarrera.orderservice.order.events.StockRejected;
 import com.adricarrera.orderservice.order.events.StockReserved;
 import com.adricarrera.orderservice.order.events.StockResultListener;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -41,6 +43,9 @@ public class OrderServiceIntegrationTest {
 
   @Autowired
   StockResultListener stockResultListener;
+
+  @MockitoBean
+  OrderEventPublisher orderEventPublisher;
 
   @Test
   void createsAndRetrievesOrder(){
